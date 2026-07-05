@@ -1,0 +1,4 @@
+*.zip
+.gradle/
+local.properties
+init.gradle.kts

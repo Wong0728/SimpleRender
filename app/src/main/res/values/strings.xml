@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">简渲染</string>
+    <string name="pick_file">选择文件</string>
+    <string name="input_svg">输入 SVG 代码</string>
+    <string name="render">渲染</string>
+    <string name="hint_svg">在此粘贴 SVG 代码…</string>
+    <string name="empty_tip">选择文件或输入 SVG 代码开始预览</string>
+    <string name="error_render">渲染失败：%1$s</string>
+    <string name="unknown_type">暂不支持的格式</string>
+    <string name="clear">清空</string>
+</resources>
