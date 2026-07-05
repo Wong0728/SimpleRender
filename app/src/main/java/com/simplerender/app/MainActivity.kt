@@ -139,23 +139,30 @@ class MainActivity : AppCompatActivity() {
             showError("SVG 代码为空")
             return
         }
-        lifecycleScope.launch {
-            runCatching {
-                val svg = withContext(Dispatchers.IO) { SVG.getFromString(code) }
-                val bitmap = Bitmap.createBitmap(
-                    binding.renderCard.width.coerceAtLeast(1),
-                    binding.renderCard.height.coerceAtLeast(1),
-                    Bitmap.Config.ARGB_8888
-                )
-                val canvas = Canvas(bitmap)
-                svg.renderToCanvas(canvas)
-                bitmap
-            }.onSuccess { bitmap ->
-                showImage(bitmap)
-            }.onFailure { e ->
-                showError(getString(R.string.error_render, e.message ?: e.toString()))
+        binding.renderCard.post {
+            lifecycleScope.launch {
+                runCatching {
+                    val (w, h) = getRenderSize()
+                    val svg = withContext(Dispatchers.IO) { SVG.getFromString(code) }
+                    val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                    val canvas = Canvas(bitmap)
+                    svg.renderToCanvas(canvas)
+                    bitmap
+                }.onSuccess { bitmap ->
+                    showImage(bitmap)
+                }.onFailure { e ->
+                    showError(getString(R.string.error_render, e.message ?: e.toString()))
+                }
             }
         }
+    }
+
+    private fun getRenderSize(): Pair<Int, Int> {
+        val width = binding.renderCard.width.takeIf { it > 0 }
+            ?: resources.displayMetrics.widthPixels
+        val height = binding.renderCard.height.takeIf { it > 0 }
+            ?: width
+        return width to height
     }
 
     private fun renderUri(uri: Uri) {
@@ -188,18 +195,29 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun renderSvg(uri: Uri) = withContext(Dispatchers.IO) {
-        val input = contentResolver.openInputStream(uri) ?: throw IllegalStateException("无法打开文件")
-        input.use { stream ->
-            val svg = SVG.getFromInputStream(stream)
-            val width = binding.renderCard.width.coerceAtLeast(1)
-            val height = binding.renderCard.height.coerceAtLeast(1)
-            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(bitmap)
-            svg.renderToCanvas(canvas)
-            bitmap
+    private fun renderSvg(uri: Uri) {
+        binding.renderCard.post {
+            lifecycleScope.launch {
+                runCatching {
+                    val (w, h) = getRenderSize()
+                    val bitmap = withContext(Dispatchers.IO) {
+                        val input = contentResolver.openInputStream(uri)
+                            ?: throw IllegalStateException("无法打开文件")
+                        input.use { stream ->
+                            val svg = SVG.getFromInputStream(stream)
+                            val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                            val canvas = Canvas(bmp)
+                            svg.renderToCanvas(canvas)
+                            bmp
+                        }
+                    }
+                    showImage(bitmap)
+                }.onFailure { e ->
+                    showError(getString(R.string.error_render, e.message ?: e.toString()))
+                }
+            }
         }
-    }.let { bitmap -> showImage(bitmap) }
+    }
 
     private suspend fun renderImage(uri: Uri) = withContext(Dispatchers.IO) {
         contentResolver.openInputStream(uri)?.use {
