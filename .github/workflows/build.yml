@@ -38,12 +38,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Build Release APK
-        run: ./gradlew assembleRelease --no-daemon
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SimpleRender-release
-          path: app/build/outputs/apk/release/*.apk
+          name: SimpleRender-debug
+          path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
